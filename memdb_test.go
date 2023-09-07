@@ -9,7 +9,7 @@ import (
 )
 
 func TestMemDB_SingleWriter_MultiReader(t *testing.T) {
-	db, err := NewMemDB(testValidSchema())
+	db, err := NewMemDB(testValidSchema(), t.TempDir())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestMemDB_SingleWriter_MultiReader(t *testing.T) {
 }
 
 func TestMemDB_Snapshot(t *testing.T) {
-	db, err := NewMemDB(testValidSchema())
+	db, err := NewMemDB(testValidSchema(), t.TempDir())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestMemDB_Snapshot(t *testing.T) {
 	// Add an object
 	obj := testObj()
 	txn := db.Txn(true)
-	txn.Insert("main", obj)
+	_ = txn.Insert("main", obj)
 	txn.Commit()
 
 	// Clone the db
@@ -60,7 +60,7 @@ func TestMemDB_Snapshot(t *testing.T) {
 
 	// Remove the object
 	txn = db.Txn(true)
-	txn.Delete("main", obj)
+	_ = txn.Delete("main", obj)
 	txn.Commit()
 
 	// Object should exist in second snapshot but not first
