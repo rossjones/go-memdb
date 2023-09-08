@@ -38,7 +38,7 @@ func TestDBSchema_Validate(t *testing.T) {
 	}
 
 	s.Tables = map[string]*TableSchema{
-		"foo": {Name: "foo"},
+		"foo": {Name: "foo"}, // &TableSchema
 	}
 	err = s.Validate()
 	if err == nil {
@@ -60,7 +60,7 @@ func TestTableSchema_Validate(t *testing.T) {
 	}
 
 	s.Indexes = map[string]*IndexSchema{
-		"foo": {Name: "foo"},
+		"foo": {Name: "foo"}, // &IndexSchema
 	}
 	err = s.Validate()
 	if err == nil {
@@ -70,7 +70,7 @@ func TestTableSchema_Validate(t *testing.T) {
 	valid := &TableSchema{
 		Name: "main",
 		Indexes: map[string]*IndexSchema{
-			"id": {
+			"id": { // &IndexSchema
 				Name:    "id",
 				Unique:  true,
 				Indexer: &StringFieldIndex{Field: "ID", Lowercase: true},
