@@ -387,7 +387,7 @@ func (txn *Txn) DeletePrefix(table string, prefix_index string, prefix string) (
 	}
 
 	if !strings.HasSuffix(prefix_index, "_prefix") {
-		return false, fmt.Errorf("Index name for DeletePrefix must be a prefix index, Got %v ", prefix_index)
+		return false, fmt.Errorf("index name for DeletePrefix must be a prefix index, Got %v ", prefix_index)
 	}
 
 	deletePrefixIndex := strings.TrimSuffix(prefix_index, "_prefix")
