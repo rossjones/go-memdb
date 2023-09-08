@@ -36,6 +36,8 @@ type Txn struct {
 	rootTxn *iradix.Txn
 	after   []func()
 
+	wal WAL
+
 	// changes is used to track the changes performed during the transaction. If
 	// it is nil at transaction start then changes are not tracked.
 	changes Changes
@@ -291,14 +293,22 @@ func (txn *Txn) Insert(table string, obj interface{}) error {
 			indexTxn.Insert(val, obj)
 		}
 	}
-	if txn.changes != nil {
-		txn.changes = append(txn.changes, Change{
-			Table:      table,
-			Before:     existing, // might be nil on a create
-			After:      obj,
-			primaryKey: idVal,
-		})
+
+	change := Change{
+		Table:      table,
+		Before:     existing, // might be nil on a create
+		After:      obj,
+		primaryKey: idVal,
 	}
+
+	if txn.wal != nil {
+		txn.wal.WriteEntry(change)
+	}
+
+	if txn.changes != nil {
+		txn.changes = append(txn.changes, change)
+	}
+
 	return nil
 }
 
@@ -366,14 +376,22 @@ func (txn *Txn) Delete(table string, obj interface{}) error {
 			}
 		}
 	}
-	if txn.changes != nil {
-		txn.changes = append(txn.changes, Change{
-			Table:      table,
-			Before:     existing,
-			After:      nil, // Now nil indicates deletion
-			primaryKey: idVal,
-		})
+
+	change := Change{
+		Table:      table,
+		Before:     existing,
+		After:      nil, // Now nil indicates deletion
+		primaryKey: idVal,
 	}
+
+	if txn.changes != nil {
+		txn.changes = append(txn.changes, change)
+	}
+
+	if txn.wal != nil {
+		txn.wal.WriteEntry(change)
+	}
+
 	return nil
 }
 

@@ -463,7 +463,7 @@ func testComplexSchema() *DBSchema {
 						Unique:  false,
 						Indexer: &UintFieldIndex{Field: "Age"},
 					},
-					"negative_age": { //&IndexSchema
+					"negative_age": { // &IndexSchema
 						Name:    "negative_age",
 						Unique:  false,
 						Indexer: &IntFieldIndex{Field: "NegativeAge"},
@@ -536,7 +536,7 @@ func testComplexSchema() *DBSchema {
 }
 
 func testComplexDB(t *testing.T) *MemDB {
-	db, err := NewMemDB(testComplexSchema())
+	db, err := NewMemDB(testComplexSchema(), t.TempDir())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}

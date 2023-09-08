@@ -11,7 +11,7 @@ import (
 )
 
 func testDB(t *testing.T) *MemDB {
-	db, err := NewMemDB(testValidSchema())
+	db, err := NewMemDB(testValidSchema(), t.TempDir())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -1222,7 +1222,7 @@ func TestTxn_InsertGet_LongestPrefix(t *testing.T) {
 		},
 	}
 
-	db, err := NewMemDB(schema)
+	db, err := NewMemDB(schema, t.TempDir())
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
@@ -1652,7 +1652,7 @@ func TestStringFieldIndexerEmptyPointerFromArgs(t *testing.T) {
 			},
 		}
 
-		db, err := NewMemDB(schema)
+		db, err := NewMemDB(schema, t.TempDir())
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -1706,7 +1706,7 @@ func TestStringFieldIndexerEmptyPointerFromArgs(t *testing.T) {
 			},
 		}
 
-		db, err := NewMemDB(schema)
+		db, err := NewMemDB(schema, t.TempDir())
 		if err != nil {
 			t.Fatalf("err: %v", err)
 		}
@@ -2118,7 +2118,7 @@ func TestTxn_Changes(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.Name, func(t *testing.T) {
-			db, err := NewMemDB(schema)
+			db, err := NewMemDB(schema, t.TempDir())
 			if err != nil {
 				t.Fatalf("Failed to create DB: %s", err)
 			}
@@ -2201,7 +2201,7 @@ func TestTxn_GetIterAndDelete(t *testing.T) {
 			},
 		},
 	}
-	db, err := NewMemDB(schema)
+	db, err := NewMemDB(schema, t.TempDir())
 	assertNilError(t, err)
 
 	key := "aaaa"

@@ -3,7 +3,12 @@
 
 package memdb
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
+
+type RehydrateFn func(map[string]interface{}) interface{}
 
 // DBSchema is the schema to use for the full database with a MemDB instance.
 //
@@ -13,6 +18,9 @@ type DBSchema struct {
 	// Tables is the set of tables within this database. The key is the
 	// table name and must match the Name in TableSchema.
 	Tables map[string]*TableSchema
+
+	// Rebuilder is used for converting a map to the correct type of
+	TypeRegister map[string]reflect.Type
 }
 
 // Validate validates the schema.
@@ -47,6 +55,10 @@ type TableSchema struct {
 	// is a unique name for the index and must match the Name in the
 	// IndexSchema.
 	Indexes map[string]*IndexSchema
+
+	// Type is the type of the underlying object that will be kept
+	// in the store, and it used for replaying it from the WAL
+	Type reflect.Type
 }
 
 // Validate is used to validate the table schema
