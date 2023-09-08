@@ -6,7 +6,6 @@
 package memdb
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -71,18 +70,28 @@ func NewMemDB(schema *DBSchema, walLocation string) (*MemDB, error) {
 // applyWAL iterates through the WAL for the database, and attempts
 // to replay the logs against the current database, taking steps to
 // ensure that it doesn't generate new log entries at the same time.
-func (db *MemDB) applyWAL() {
-	ch := db.wal.Replay()
+func (db *MemDB) applyWAL() error {
+	ch := db.wal.Replay(db.schema)
 
 	txn := db.NoLogWriteTxn()
 
 	for change := range ch {
-		fmt.Println("Writing", change.Table, change.After)
-		err := txn.Insert(change.Table, change.After)
-		fmt.Println(err)
+		if change.After == nil {
+			// When deleting we want to provide the previous object
+			// value so the id can be extracted to action the delete
+			_ = txn.Delete(change.Table, change.Before)
+		} else {
+			// When inserting, we will provide the new state of the
+			// object.  We _could_ validate the wal by checking the
+			// current object value against change.Before, but we
+			// should do that outside of the db startup.
+			_ = txn.Insert(change.Table, change.After)
+		}
+
 	}
 
 	txn.Commit()
+	return nil
 }
 
 // DBSchema returns schema in use for introspection.
@@ -124,6 +133,7 @@ func (db *MemDB) NoLogWriteTxn() *Txn {
 		db:      db,
 		write:   true,
 		rootTxn: db.getRoot().Txn(),
+		wal:     nil,
 	}
 
 	return txn

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"reflect"
 	"sync"
 
 	"golang.org/x/exp/slices"
@@ -12,27 +13,30 @@ import (
 
 type PersistedObject struct {
 	Table      string
-	Object     interface{}
+	Before     interface{}
+	After      interface{}
 	PrimaryKey []byte
 }
 
 func (p *PersistedObject) From(chg Change) {
 	p.Table = chg.Table
-	p.Object = chg.After
+	p.Before = chg.Before
+	p.After = chg.After
 	p.PrimaryKey = chg.primaryKey
 }
 
 func (p *PersistedObject) ToChange() Change {
 	return Change{
 		Table:      p.Table,
-		After:      p.Object,
+		Before:     p.Before,
+		After:      p.After,
 		primaryKey: p.PrimaryKey,
 	}
 }
 
 type WAL interface {
-	WriteEntry(chg Change, isTombstone bool) error
-	Replay() chan Change
+	WriteEntry(chg Change) error
+	Replay(schema *DBSchema) chan Change
 }
 
 type SimpleWAL struct {
@@ -58,7 +62,7 @@ func NewSimpleWAL(location string) (*SimpleWAL, error) {
 }
 
 // Replay implements WAL.
-func (s *SimpleWAL) Replay() chan Change {
+func (s *SimpleWAL) Replay(schema *DBSchema) chan Change {
 	ch := make(chan Change)
 
 	go func() {
@@ -80,6 +84,14 @@ func (s *SimpleWAL) Replay() chan Change {
 			data, _ := os.ReadFile(path.Join(s.folder, name))
 			_ = json.Unmarshal(data, &object)
 
+			typ := schema.Tables[object.Table].Type
+			if object.Before != nil {
+				object.Before = s.convertMapToStruct(object.Before.(map[string]interface{}), typ)
+			}
+			if object.After != nil {
+				object.After = s.convertMapToStruct(object.After.(map[string]interface{}), typ)
+			}
+
 			ch <- object.ToChange()
 		}
 
@@ -89,8 +101,26 @@ func (s *SimpleWAL) Replay() chan Change {
 	return ch
 }
 
-// WriteEntry implements WAL.
-func (s *SimpleWAL) WriteEntry(chg Change, isTombstone bool) error {
+func (s *SimpleWAL) convertMapToStruct(m map[string]interface{}, structType reflect.Type) interface{} {
+	structValue := reflect.New(structType).Elem()
+
+	for i := 0; i < structValue.NumField(); i++ {
+		field := structValue.Field(i)
+		fieldType := structType.Field(i)
+		fieldName := fieldType.Name
+
+		if val, ok := m[fieldName]; ok {
+			field.Set(reflect.ValueOf(val))
+		}
+	}
+
+	return structValue.Interface()
+}
+
+// WriteEntry implements WAL by writing a single file with the
+// provided change. If the value of the object (`Change.After`)
+// is nil, then this is a deletion.
+func (s *SimpleWAL) WriteEntry(chg Change) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
