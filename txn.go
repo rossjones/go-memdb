@@ -303,7 +303,7 @@ func (txn *Txn) Insert(table string, obj interface{}) error {
 		txn.changes = append(txn.changes, change)
 
 		if txn.wal != nil {
-			txn.wal.WriteEntry(change)
+			txn.wal.WriteEntry(change, false)
 		}
 	}
 	return nil

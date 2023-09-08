@@ -19,11 +19,16 @@ func TestSimpleWAL(t *testing.T) {
 
 	l := t.TempDir()
 	w, _ := NewSimpleWAL(l)
-	_ = w.WriteEntry(ch)
+	ch.primaryKey = []byte("0001")
+	_ = w.WriteEntry(ch, false)
+	ch.primaryKey = []byte("0002")
+	_ = w.WriteEntry(ch, false)
+	ch.primaryKey = []byte("0003")
+	_ = w.WriteEntry(ch, false)
 
 	c := w.Replay()
 
 	for change := range c {
-		fmt.Println(change.Table)
+		fmt.Println(change.primaryKey)
 	}
 }
